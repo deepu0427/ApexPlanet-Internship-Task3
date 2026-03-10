@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Quiz App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+      background: #157c55;
+    }
+
+    .quiz-container {
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #b30068;
+    }
+
+    #result {
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .quiz-container {
+        padding: 10px;
+        font-size: 14px;
+      }
+      button {
+        font-size: 14px;
+        padding: 8px 16px;
+      }
+    }
+
+    /* Tablet */
+    @media (min-width: 601px) and (max-width: 1024px) {
+      .quiz-container {
+        font-size: 16px;
+      }
+      button {
+        font-size: 15px;
+      }
+    }
+
+    /* Desktop */
+    @media (min-width: 1025px) {
+      .quiz-container {
+        font-size: 18px;
+      }
+      button {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h2 id="question">Loading question...</h2>
+    <div id="answers"></div>
+    <p id="result"></p>
+    <p id="score"></p>
+    <button onclick="getQuestion()">Next Question</button>
+    <button onclick="startFixedQuiz()">Start 5-Question Quiz</button>
+    <button onclick="startInfiniteQuiz()">Start Infinite Quiz</button>
+  </div>
+
+  <script>
+    let score = 0;
+    let totalQuestions = 5;
+    let currentQuestion = 0;
+    let infiniteMode = false;
+
+    async function getQuestion() {
+      if (!infiniteMode && currentQuestion >= totalQuestions) {
+        document.getElementById("question").innerText = "Quiz Finished!";
+        document.getElementById("answers").innerHTML = "";
+        document.getElementById("result").innerText = "Your score: " + score + "/" + totalQuestions;
+        return;
+      }
+
+      let response = await fetch("https://opentdb.com/api.php?amount=1&type=multiple");
+      let data = await response.json();
+      displayQuestion(data.results[0]);
+
+      if (!infiniteMode) currentQuestion++;
+    }
+
+    function displayQuestion(data) {
+      document.getElementById("question").innerHTML = data.question;
+      let answersDiv = document.getElementById("answers");
+      answersDiv.innerHTML = "";
+
+      let options = [...data.incorrect_answers, data.correct_answer];
+      options.sort(() => Math.random() - 0.5);
+
+      options.forEach(option => {
+        let btn = document.createElement("button");
+        btn.innerHTML = option;
+        btn.onclick = () => {
+          if (option === data.correct_answer) {
+            score++;
+            document.getElementById("result").innerText = "✅ Correct!";
+          } else {
+            document.getElementById("result").innerText = "❌ Wrong!";
+          }
+          document.getElementById("score").innerText = "Score: " + score;
+        };
+        answersDiv.appendChild(btn);
+      });
+
+      document.getElementById("result").innerText = "";
+    }
+
+    function startFixedQuiz() {
+      score = 0;
+      currentQuestion = 0;
+      infiniteMode = false;
+      document.getElementById("score").innerText = "Score: 0";
+      getQuestion();
+    }
+
+    function startInfiniteQuiz() {
+      score = 0;
+      infiniteMode = true;
+      document.getElementById("score").innerText = "Score: 0";
+      getQuestion();
+      // Automatically load new questions every 10 seconds
+      setInterval(getQuestion, 10000);
+    }
+
+    // Load first question by default
+    getQuestion();
+  </script>
+</body>
+</html>
